@@ -1,121 +1,51 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { invoke } from "@tauri-apps/api/core";
 
 function App() {
-  const [url, setUrl] = useState("https://www.rhishav.com");
-  const [currentUrl, setCurrentUrl] = useState("https://www.rhishav.com");
-  const [pageTitle, setPageTitle] = useState("Rhishav.com");
+  const [url, setUrl] = useState("https://www.google.com");
   const [showOverlay, setShowOverlay] = useState(false);
-  const [history, setHistory] = useState<string[]>(["https://www.rhishav.com"]);
-  const [historyIndex, setHistoryIndex] = useState(0);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Handle keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === "l") {
-        e.preventDefault();
-        setShowOverlay((prev) => !prev);
-        if (!showOverlay) {
-          setTimeout(() => inputRef.current?.select(), 100);
-        }
-      }
-      if (e.key === "Escape") {
-        setShowOverlay(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [showOverlay]);
-
-  // Update page title when iframe loads
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-
-    const updateTitle = () => {
-      try {
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (iframeDoc) {
-          const title = iframeDoc.title || new URL(currentUrl).hostname;
-          setPageTitle(title);
-        }
-      } catch (error) {
-        // Cross-origin restrictions
-        const hostname = new URL(currentUrl).hostname;
-        setPageTitle(hostname);
-      }
-    };
-
-    iframe.addEventListener("load", updateTitle);
-    return () => iframe.removeEventListener("load", updateTitle);
-  }, [currentUrl]);
-
-  const navigateTo = (newUrl: string) => {
-    let fullUrl = newUrl;
-
-    // Add https:// if no protocol specified
-    if (!newUrl.startsWith("http://") && !newUrl.startsWith("https://")) {
-      fullUrl = "https://" + newUrl;
-    }
-
-    setCurrentUrl(fullUrl);
-    setUrl(fullUrl);
-
-    // Update history
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push(fullUrl);
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    navigateTo(url);
+    let fullUrl = url.trim();
+
+    if (!fullUrl) return;
+
+    // Check if it's a URL or a search query
+    const isUrl = fullUrl.includes('.') && !fullUrl.includes(' ') ||
+                   fullUrl.startsWith("http://") ||
+                   fullUrl.startsWith("https://");
+
+    if (isUrl) {
+      // Add https:// if no protocol specified
+      if (!fullUrl.startsWith("http://") && !fullUrl.startsWith("https://")) {
+        fullUrl = "https://" + fullUrl;
+      }
+    } else {
+      // Treat as search query
+      fullUrl = `https://www.google.com/search?q=${encodeURIComponent(fullUrl)}`;
+    }
+
+    // Open new webview window
+    invoke("create_webview", { url: fullUrl }).catch(console.error);
     setShowOverlay(false);
   };
 
-  const goBack = () => {
-    if (historyIndex > 0) {
-      const newIndex = historyIndex - 1;
-      setHistoryIndex(newIndex);
-      const prevUrl = history[newIndex];
-      setCurrentUrl(prevUrl);
-      setUrl(prevUrl);
-    }
-  };
-
-  const goForward = () => {
-    if (historyIndex < history.length - 1) {
-      const newIndex = historyIndex + 1;
-      setHistoryIndex(newIndex);
-      const nextUrl = history[newIndex];
-      setCurrentUrl(nextUrl);
-      setUrl(nextUrl);
-    }
-  };
-
-  const reload = () => {
-    if (iframeRef.current) {
-      iframeRef.current.src = currentUrl;
-    }
-  };
-
   return (
-    <div className="h-screen w-screen flex flex-col bg-white overflow-hidden">
+    <div className="h-screen w-screen flex flex-col bg-gradient-to-br from-blue-50 to-purple-50 overflow-hidden">
       {/* Window Controls Bar */}
       <div
         data-tauri-drag-region
-        className="h-8 bg-white border-b border-gray-200/50 flex items-center justify-between px-4 select-none"
+        className="h-8 bg-gray-900 flex items-center justify-between px-4 select-none"
       >
-        <div className="text-xs text-gray-500 font-medium">Manta Browser</div>
+        <div className="text-xs text-gray-300 font-medium">Manta Browser</div>
         <div className="flex gap-2">
           <button
             onClick={() => getCurrentWindow().minimize()}
-            className="w-8 h-6 hover:bg-gray-100 rounded flex items-center justify-center transition-colors"
+            className="w-8 h-6 hover:bg-gray-700 rounded flex items-center justify-center transition-colors text-gray-300"
           >
             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 12 12">
               <rect x="2" y="5" width="8" height="1.5" />
@@ -123,7 +53,7 @@ function App() {
           </button>
           <button
             onClick={() => getCurrentWindow().toggleMaximize()}
-            className="w-8 h-6 hover:bg-gray-100 rounded flex items-center justify-center transition-colors"
+            className="w-8 h-6 hover:bg-gray-700 rounded flex items-center justify-center transition-colors text-gray-300"
           >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 12 12">
               <rect x="2" y="2" width="8" height="8" strokeWidth="1.5" />
@@ -131,7 +61,7 @@ function App() {
           </button>
           <button
             onClick={() => getCurrentWindow().close()}
-            className="w-8 h-6 hover:bg-red-500 hover:text-white rounded flex items-center justify-center transition-colors"
+            className="w-8 h-6 hover:bg-red-500 hover:text-white rounded flex items-center justify-center transition-colors text-gray-300"
           >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 12 12">
               <path strokeWidth="1.5" d="M2 2l8 8M10 2l-8 8" />
@@ -140,138 +70,101 @@ function App() {
         </div>
       </div>
 
-      {/* Hidden Control Overlay */}
-      <AnimatePresence>
-        {showOverlay && (
+      {/* Main Content */}
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-full max-w-2xl px-8">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="absolute top-8 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-3xl"
+            className="text-center mb-12"
           >
-            <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 p-6">
-              {/* Page Title */}
-              <div className="mb-4 text-sm text-gray-500 font-medium truncate">
-                {pageTitle}
-              </div>
+            <h1 className="text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+              Manta Browser
+            </h1>
+            <p className="text-gray-500 text-lg">
+              Using native WebView2 - Each site opens in a new window
+            </p>
+          </motion.div>
 
-              {/* URL Bar */}
-              <form onSubmit={handleSubmit} className="mb-4">
+          <motion.form
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            onSubmit={handleSubmit}
+            className="mb-8"
+          >
+            <div className="relative">
+              <input
+                ref={inputRef}
+                type="text"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                className="w-full px-6 py-4 bg-white rounded-xl text-lg border-2 border-gray-200 focus:border-blue-500 focus:outline-none transition-all shadow-lg"
+                placeholder="Search or enter URL"
+                autoFocus
+              />
+            </div>
+          </motion.form>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="grid grid-cols-4 gap-4"
+          >
+            {[
+              { name: "Google", url: "https://google.com" },
+              { name: "YouTube", url: "https://youtube.com" },
+              { name: "GitHub", url: "https://github.com" },
+              { name: "Twitter", url: "https://twitter.com" },
+            ].map((site) => (
+              <button
+                key={site.name}
+                onClick={() => {
+                  invoke("create_webview", { url: site.url }).catch(console.error);
+                }}
+                className="p-6 bg-white rounded-xl hover:shadow-xl transition-all border-2 border-gray-100 hover:border-blue-200"
+              >
+                <div className="text-base font-medium text-gray-800">{site.name}</div>
+              </button>
+            ))}
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Overlay URL Bar */}
+      <AnimatePresence>
+        {showOverlay && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center pt-20"
+            onClick={() => setShowOverlay(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: -50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -50 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-2xl px-4"
+            >
+              <form onSubmit={handleSubmit} className="relative">
                 <input
                   ref={inputRef}
                   type="text"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                  placeholder="Enter URL or search..."
+                  className="w-full px-6 py-4 bg-white rounded-xl text-lg focus:outline-none shadow-2xl"
+                  placeholder="Search or enter URL"
                   autoFocus
                 />
               </form>
-
-              {/* Navigation Buttons */}
-              <div className="flex gap-3">
-                <button
-                  onClick={goBack}
-                  disabled={historyIndex === 0}
-                  className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-300 disabled:cursor-not-allowed rounded-xl font-medium transition-all"
-                >
-                  � Back
-                </button>
-                <button
-                  onClick={goForward}
-                  disabled={historyIndex === history.length - 1}
-                  className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-300 disabled:cursor-not-allowed rounded-xl font-medium transition-all"
-                >
-                  Forward �
-                </button>
-                <button
-                  onClick={reload}
-                  className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-all"
-                >
-                  � Reload
-                </button>
-              </div>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* WebView Area */}
-      <div className="flex-1 relative">
-        <iframe
-          ref={iframeRef}
-          src={currentUrl}
-          className="w-full h-full border-0"
-          title="Browser WebView"
-          sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-presentation allow-popups-to-escape-sandbox allow-top-navigation"
-        />
-      </div>
-
-      {/* Persistent Bottom Bar */}
-      <motion.div
-        initial={{ y: 100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-        className="bg-white/80 backdrop-blur-xl border-t border-gray-200/50 px-6 py-4 flex items-center gap-6"
-      >
-        {/* Navigation Icons */}
-        <div className="flex gap-2">
-          <button
-            onClick={goBack}
-            disabled={historyIndex === 0}
-            className="p-2 hover:bg-gray-100 disabled:text-gray-300 disabled:cursor-not-allowed rounded-lg transition-all"
-            title="Back"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
-          <button
-            onClick={goForward}
-            disabled={historyIndex === history.length - 1}
-            className="p-2 hover:bg-gray-100 disabled:text-gray-300 disabled:cursor-not-allowed rounded-lg transition-all"
-            title="Forward"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
-        </div>
-
-        {/* Page Name */}
-        <div className="flex-1 text-sm text-gray-600 font-medium truncate">
-          {pageTitle}
-        </div>
-
-        {/* URL Bar Trigger */}
-        <button
-          onClick={() => setShowOverlay(true)}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-all"
-        >
-          Ctrl+L
-        </button>
-      </motion.div>
     </div>
   );
 }

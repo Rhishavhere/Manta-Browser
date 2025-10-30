@@ -1,6 +1,12 @@
 {
   "permissions": {
     "allow": [
+      "WebSearch",
+      "WebFetch(domain:v2.tauri.app)",
+      "WebFetch(domain:docs.rs)",
+      "Bash(dir:*)",
+      "Bash(cargo clean:*)",
+      "Bash(cargo build:*)"
     ],
     "deny": [],
     "ask": []
