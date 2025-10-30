@@ -5,9 +5,9 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 function App() {
   const [url, setUrl] = useState("https://www.rhishav.com");
   const [currentUrl, setCurrentUrl] = useState("https://www.rhishav.com");
-  const [pageTitle, setPageTitle] = useState("Google");
+  const [pageTitle, setPageTitle] = useState("Rhishav.com");
   const [showOverlay, setShowOverlay] = useState(false);
-  const [history, setHistory] = useState<string[]>([""]);
+  const [history, setHistory] = useState<string[]>(["https://www.rhishav.com"]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);

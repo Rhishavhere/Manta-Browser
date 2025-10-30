@@ -13,6 +13,7 @@
     "windows": [
       {
         "title": "Manta Browser",
+        "label": "main",
         "width": 1200,
         "height": 800,
         "decorations": false,
@@ -22,7 +23,8 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "capabilities": ["default"]
     }
   },
   "bundle": {
