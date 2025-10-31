@@ -35,7 +35,7 @@ function App() {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-gradient-to-br from-blue-50 to-purple-50 overflow-hidden">
+    <div className="h-screen w-screen flex flex-col bg-linear-to-br from-blue-50 to-purple-50 overflow-hidden">
       {/* Window Controls Bar */}
       <div
         data-tauri-drag-region
@@ -78,7 +78,7 @@ function App() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-12"
           >
-            <h1 className="text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+            <h1 className="text-6xl font-bold text-black mb-4">
               Manta Browser
             </h1>
             <p className="text-gray-500 text-lg">
@@ -111,20 +111,22 @@ function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="grid grid-cols-4 gap-4"
+            className="flex text-xl gap-4 justify-center items-center"
           >
             {[
               { name: "Google", url: "https://google.com" },
               { name: "YouTube", url: "https://youtube.com" },
               { name: "GitHub", url: "https://github.com" },
               { name: "Twitter", url: "https://twitter.com" },
+              { name: "Apple", url: "https://apple.com" },
+              { name: "Rhishav.com", url: "https://rhishav.com" },
             ].map((site) => (
               <button
                 key={site.name}
                 onClick={() => {
                   invoke("create_webview", { url: site.url }).catch(console.error);
                 }}
-                className="p-6 bg-white rounded-xl hover:shadow-xl transition-all border-2 border-gray-100 hover:border-blue-200"
+                className="p-4 bg-white rounded-xl hover:shadow-xl transition-all border-2 border-gray-100 hover:border-blue-200"
               >
                 <div className="text-base font-medium text-gray-800">{site.name}</div>
               </button>
